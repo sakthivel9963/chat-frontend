@@ -1,0 +1,20 @@
+{
+  "userDetails": {
+    "userName": "test",
+    "userId": "TVd98WM4JIgszGGiAACi",
+    "timeStamp": 1583592842947,
+    "isTyping": false
+  },
+  "url": "http://localhost:5000",
+  "message": "",
+  "userDetailsList": [
+    {
+      "userName": "test",
+      "userId": "TVd98WM4JIgszGGiAACi",
+      "timeStamp": 1583592842947
+    }
+  ],
+  "userMessageList": [
+    "{message: \"test\n\", time: 1583592865564, userId: \"TV…}"
+  ]
+}

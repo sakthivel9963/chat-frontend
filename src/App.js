@@ -1,19 +1,22 @@
 import React, { Component } from "react";
 import io from "socket.io-client";
-import Axios from "axios";
+import moment from "moment";
+// import Axios from "axios";
 import "./index.css";
 class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
       userDetails: {
-        userName: null,
-        userId: null,
-        timeStamp: null
+        userName: "",
+        userId: "",
+        timeStamp: "",
+        isTyping: false
       },
       url: process.env.REACT_APP_API_URL,
-      message: null,
-      userDetailsList: null
+      message: "",
+      userDetailsList: [],
+      userMessageList: []
     };
   }
 
@@ -22,7 +25,7 @@ class App extends Component {
   }
 
   index = async () => {
-    const { url } = this.state;
+    const { url, userMessageList } = this.state;
     const socket = io(url);
     const userName = prompt("Please enter your name");
     socket.on("connected", data => {
@@ -40,8 +43,31 @@ class App extends Component {
       this.setState({ userDetailsList: data });
     });
     socket.on("getMessage", data => {
-      console.log(data);
+      userMessageList.push(data);
+      this.setState({
+        userMessageList
+      });
+      const messageDetails = document.querySelector("#message-details");
+      messageDetails.scrollIntoView();
     });
+  };
+
+  sendMessage = () => {
+    const { message, userDetails } = this.state;
+    const { url } = this.state;
+    const socket = io(url);
+    if (message && message.trim()) {
+      const data = {
+        message,
+        userName: userDetails.userName,
+        userId: userDetails.userId,
+        time: Date.now()
+      };
+      socket.emit("sendMessage", data);
+      this.setState({
+        message: ""
+      });
+    }
   };
 
   getValue = e => {
@@ -50,22 +76,19 @@ class App extends Component {
     });
   };
 
-  sendMessage = () => {
-    const { message, userDetails } = this.state;
-    const { url } = this.state;
-    const socket = io(url);
-    const data = {
-      message,
-      userDetails
-    };
-    socket.emit("sendMessage", data);
-    this.setState({
-      message: null
-    });
+  getKeyPress = e => {
+    if (e.keyCode === 13 && e.ctrlKey) {
+      this.sendMessage();
+    }
   };
 
   render() {
-    const { userDetailsList } = this.state;
+    const {
+      userDetails,
+      userDetailsList,
+      message,
+      userMessageList
+    } = this.state;
     return (
       <React.Fragment>
         <div className="container">
@@ -79,7 +102,11 @@ class App extends Component {
                       return (
                         <li key={value.userId}>
                           <div className="card">
-                            <div className="card-body">{value.userName}</div>
+                            <div className="card-body">
+                              {userDetails.userId === value.userId
+                                ? `You`
+                                : value.userName}
+                            </div>
                           </div>
                         </li>
                       );
@@ -90,25 +117,52 @@ class App extends Component {
             <div className="col-8 border reset-padding">
               <div className="user-details border border-top-1">
                 <ul>
-                  <li>
-                    <div className="card">
-                      <div className="card-body">Sakthivel</div>
-                    </div>
-                  </li>
+                  {userMessageList &&
+                    userMessageList.length > 0 &&
+                    userMessageList.map((value, index) => {
+                      return (
+                        <li key={value.userId + index}>
+                          <div className="card">
+                            <div className="card-body">
+                              {" "}
+                              <span>
+                                <span>
+                                  {userDetails.userId === value.userId
+                                    ? `You`
+                                    : value.userName}{" "}
+                                  :{" "}
+                                </span>{" "}
+                                {value.message}{" "}
+                              </span>
+                              <span>
+                                {moment(value.time).format(
+                                  "DD/MM/YYYY, h:mm:ss a"
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
                 </ul>
+                <span id="message-details"></span>
               </div>
               <div className="user-input">
                 <div className="input-group mb-3">
-                  <input
-                    type="text"
-                    className="form-control"
+                  <textarea
+                    className="form-control resize"
                     placeholder="Enter Message"
                     aria-label="message"
                     aria-describedby="basic-addon2"
                     id="message"
                     name="message"
                     onChange={this.getValue}
-                  />
+                    onKeyDown={this.getKeyPress}
+                    value={message}
+                    rows={1}
+                    wrap="hard"
+                    autoFocus
+                  ></textarea>
                   <div className="input-group-append">
                     <button
                       className="btn btn-success"
